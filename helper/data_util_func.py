@@ -7,17 +7,23 @@
 """
 from __future__ import print_function
 import pandas as pd
-import re
-import numpy as np
-import stop_words
-from sklearn.feature_extraction import stop_words as sklearn_stopwords
+from feature_encoder import FeatureEncoder, clean_text
+from classifier import Classifier
 
-STOP_WORDS = set(
-    stop_words.get_stop_words('english')
-    + list(sklearn_stopwords.ENGLISH_STOP_WORDS)
-    + ['i', 'why', 'what', 'a']
+FEATURES_TYPE = 'tf'
+TOP_WORDS = 4
+print('FEATURES_TYPE: %s' % FEATURES_TYPE)
+print('TOP_WORDS: %d' % TOP_WORDS)
+
+feature_encoder = FeatureEncoder(
+    features_type=FEATURES_TYPE,
+    columns=['title', 'content'],
 )
-print('the numbers of STOP WORDS: %d' % len(STOP_WORDS))
+
+classifier = Classifier(
+    features_type=FEATURES_TYPE,
+
+)
 
 
 def load_data(file_name, header=0, encoding='utf8', index_col=None, converters=None):
@@ -57,29 +63,52 @@ def save_data(data, file_name, header=True, index=False):
                 header=header,
                 encoding='utf8')
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-def clean_text(text):
-    # 全部转为小写
-    text = text.lower()
-    # 去掉html字符
-    text = re.sub('<.*?>', ' ', text)
-    # 去掉数字
-    # text = re.sub('\d+', ' ', text)
-    # 去掉非字母等字符
-    text = re.sub('[^a-z\'-]', ' ', text)
-    # 将多空白符全部 转为 单空格
-    text = re.sub('\s+', ' ', text)
-    # 去除stop words ,且长度大于1
-    text = [item for item in text.strip().split(' ') if item not in STOP_WORDS and len(item)>1]
-    return text
+
+def classifier_agent(dataset_names=None):
+    print('分类器方法：%s' % classifier.features_type)
+    print('TOP_WORDS: %d' % TOP_WORDS)
+
+    if dataset_names is None:
+        dataset_names = ['biology', 'cooking', 'crypto', 'diy', 'robotics', 'travel']
+    for name in dataset_names:
+        assert name in ['biology', 'cooking', 'crypto', 'diy', 'robotics',
+                        'travel'], 'dataset_names必须在[biology, cooking, crypto, diy, robotics, travel]中'
+        train_df = load_data('dataset/train/%s.csv' % name)
+        print('-' * 80)
+        print('data name: %s , 数量：%d' % (name, len(train_df)))
+        train_X = feature_encoder.fit_transform(
+            train_df
+        )
+        train_y = train_df['tags']
+
+        if FEATURES_TYPE in ['tf', 'tf-idf']:
+            train_pred_y = classifier.predict(
+                train_X, train_y, verbose=3,
+                feature_names=feature_encoder.feature_names,
+                top_words=TOP_WORDS
+            )
+        else:
+            train_pred_y = classifier.predict(
+                train_X, train_y, verbose=3,
+            )
 
 
-def show_df_info(data=None):
-    """显示数据某个属性的详情：
+def test_predict():
+    test_df = load_data('/home/jdwang/PycharmProjects/TransferLearning/dataset/test/test.csv')
+    test_X = feature_encoder.fit_transform(
+        test_df
+    )
+    test_pred_y = classifier.predict(
+        test_X, None,
+        verbose=1,
+        feature_names=feature_encoder.feature_names,
+        top_words=3
+    )
+    test_df['tags'] = test_pred_y
+    save_data(
+        test_df[['id', 'tags']],
+        '/home/jdwang/PycharmProjects/TransferLearning/submit-tf.csv'
+    )
 
-    :param data: pd.DataFrame()
-        数据框
-    """
-    pass
-    print(data.head())
-    print(data.info())
+
+# test_predict()
