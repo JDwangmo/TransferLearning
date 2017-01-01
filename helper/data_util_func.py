@@ -11,13 +11,17 @@ from feature_encoder import FeatureEncoder, clean_text
 from classifier import Classifier
 
 FEATURES_TYPE = 'tf'
-TOP_WORDS = 4
+TOP_WORDS = 3
+COLUMNS = ['title', 'content']
+# COLUMNS = ['content']
+
 print('FEATURES_TYPE: %s' % FEATURES_TYPE)
 print('TOP_WORDS: %d' % TOP_WORDS)
+print('COLUMNS: %s' % COLUMNS)
 
 feature_encoder = FeatureEncoder(
     features_type=FEATURES_TYPE,
-    columns=['title', 'content'],
+    columns=COLUMNS,
 )
 
 classifier = Classifier(
@@ -67,6 +71,7 @@ def save_data(data, file_name, header=True, index=False):
 def classifier_agent(dataset_names=None):
     print('分类器方法：%s' % classifier.features_type)
     print('TOP_WORDS: %d' % TOP_WORDS)
+    print('COLUMNS: %s' % COLUMNS)
 
     if dataset_names is None:
         dataset_names = ['biology', 'cooking', 'crypto', 'diy', 'robotics', 'travel']
